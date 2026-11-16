@@ -14,9 +14,11 @@ const state = {
   simLots: 0,
   simCounts: {},
   simTotalDefects: 0,
+  recentLots: [],
   showRealOverlay: true,
   showPhatOverlay: true,
-  animating: false
+  animating: false,
+  stopRequested: false
 };
 
 // ============================================
@@ -150,6 +152,29 @@ function recordLot(defects) {
   state.simLots += 1;
   state.simTotalDefects += defects;
   state.simCounts[defects] = (state.simCounts[defects] || 0) + 1;
+  state.recentLots.push({ lotNum: state.simLots, defects });
+  if (state.recentLots.length > 24) {
+    state.recentLots.shift();
+  }
+}
+
+function renderLotHistory() {
+  const wrap = document.getElementById('lot-history-wrap');
+  const container = document.getElementById('lot-history');
+  if (state.recentLots.length === 0) {
+    wrap.hidden = true;
+    container.innerHTML = '';
+    return;
+  }
+  wrap.hidden = false;
+  container.innerHTML = '';
+  state.recentLots.forEach((item) => {
+    const ok = matchesCondition(item.defects, state.op, state.k);
+    const pill = document.createElement('span');
+    pill.className = `lot-pill ${ok ? 'ok' : 'fail'}`;
+    pill.textContent = `#${item.lotNum}: X=${item.defects}`;
+    container.appendChild(pill);
+  });
 }
 
 function updateLotStageUI(pieces, defects) {
@@ -163,56 +188,166 @@ function updateLotStageUI(pieces, defects) {
 
   summary.innerHTML = `En este lote: <strong>${defects}</strong> pieza${defects === 1 ? '' : 's'} con \\(Y_i = 1\\) y <strong>${state.n - defects}</strong> con \\(Y_i = 0\\).`;
   renderMathIn(summary);
+  renderLotHistory();
+}
+
+function getMsPerPiece(amount, speed) {
+  const baseMap = {
+    1: 35,
+    10: 12,
+    50: 6,
+    100: 4,
+    1000: 0.8
+  };
+  const base = baseMap[amount] ?? 4;
+  const mult = speed === 'slow' ? 2.2 : speed === 'fast' ? 0.35 : 1;
+  return base * mult;
+}
+
+function clearPiecesToUnknown(chips) {
+  chips.forEach((chip) => {
+    chip.className = 'piece-chip';
+    chip.querySelector('.yi').textContent = '?';
+  });
 }
 
 async function runSimulation() {
   if (state.animating) return;
   const amount = parseInt(document.getElementById('sim-amount').value, 10);
+  const speed = document.getElementById('sim-speed').value;
+  const msPerPiece = getMsPerPiece(amount, speed);
 
-  if (amount === 1) {
-    state.animating = true;
-    const btn = document.getElementById('btn-sim-run');
-    btn.disabled = true;
+  state.animating = true;
+  state.stopRequested = false;
 
-    const { pieces, defects } = simulateSingleLotValues();
-    renderPiecesGrid(null);
-    const chips = document.querySelectorAll('#pieces-grid .piece-chip');
-    const badge = document.getElementById('lot-status-badge');
-    badge.className = 'lot-badge';
-    badge.textContent = 'Inspeccionando piezas...';
+  const btnRun = document.getElementById('btn-sim-run');
+  const btnStop = document.getElementById('btn-sim-stop');
+  const progressWrap = document.getElementById('sim-progress-wrap');
+  const progressBar = document.getElementById('sim-progress-bar');
+  const progressText = document.getElementById('sim-progress-text');
+  const lotTitle = document.getElementById('stage-lot-title');
+  const badge = document.getElementById('lot-status-badge');
+  const summary = document.getElementById('lot-summary');
 
-    for (let i = 0; i < state.n; i++) {
-      const isDefect = pieces[i] === 1;
-      chips[i].classList.add(isDefect ? 'defect' : 'good');
-      chips[i].querySelector('.yi').textContent = isDefect ? '1' : '0';
-      await new Promise((r) => setTimeout(r, 35));
+  btnRun.disabled = true;
+  btnStop.hidden = false;
+  progressWrap.hidden = false;
+  progressBar.style.width = '0%';
+  progressText.textContent = `0 / ${amount} lotes`;
+
+  renderPiecesGrid(null);
+  let chips = document.querySelectorAll('#pieces-grid .piece-chip');
+
+  let lotIdx = 0;
+  let pieceIdx = 0;
+  let currentLot = simulateSingleLotValues();
+  let lastTime = performance.now();
+  let accMs = 0;
+
+  lotTitle.textContent = `Inspeccionando lote ${lotIdx + 1} de ${amount}…`;
+  badge.className = 'lot-badge';
+  badge.textContent = 'Inspeccionando piezas…';
+
+  const step = (now) => {
+    if (state.stopRequested) {
+      finishAnimation(true);
+      return;
     }
 
-    recordLot(defects);
-    updateLotStageUI(pieces, defects);
-    updateSimStats();
-    renderSimChart();
+    const dt = Math.min(100, now - lastTime);
+    lastTime = now;
+    accMs += dt;
 
-    btn.disabled = false;
+    let stepsToAdvance = Math.floor(accMs / msPerPiece);
+    if (stepsToAdvance > 0) {
+      accMs -= stepsToAdvance * msPerPiece;
+      // Limitar por frame para no bloquear el hilo de render
+      stepsToAdvance = Math.min(stepsToAdvance, state.n * 2);
+
+      let lotCompletedInFrame = false;
+
+      while (stepsToAdvance > 0 && lotIdx < amount) {
+        if (pieceIdx === 0) {
+          clearPiecesToUnknown(chips);
+          lotTitle.textContent = `Inspeccionando lote ${lotIdx + 1} de ${amount}…`;
+        }
+
+        const isDefect = currentLot.pieces[pieceIdx] === 1;
+        const chip = chips[pieceIdx];
+        chip.classList.remove('scanning');
+        chip.classList.add(isDefect ? 'defect' : 'good');
+        chip.querySelector('.yi').textContent = isDefect ? '1' : '0';
+
+        pieceIdx++;
+        stepsToAdvance--;
+
+        if (pieceIdx < state.n) {
+          chips[pieceIdx].classList.add('scanning');
+        } else {
+          // Lote completado
+          recordLot(currentLot.defects);
+          lotCompletedInFrame = true;
+          lotIdx++;
+          pieceIdx = 0;
+
+          const ok = matchesCondition(currentLot.defects, state.op, state.k);
+          badge.className = `lot-badge ${ok ? 'ok' : 'fail'}`;
+          badge.textContent = `Lote #${state.simLots}: X = ${currentLot.defects} · ${ok ? 'Cumple' : 'No cumple'}`;
+          summary.textContent = `Último lote completado: ${currentLot.defects} defectuosa${currentLot.defects === 1 ? '' : 's'} y ${state.n - currentLot.defects} correctas.`;
+
+          if (lotIdx < amount) {
+            currentLot = simulateSingleLotValues();
+          }
+        }
+      }
+
+      if (lotCompletedInFrame) {
+        const pct = (lotIdx / amount) * 100;
+        progressBar.style.width = `${pct.toFixed(1)}%`;
+        progressText.textContent = `${lotIdx} / ${amount} lotes`;
+        updateSimStats();
+        renderLotHistory();
+        renderSimChart();
+      }
+    }
+
+    if (lotIdx < amount) {
+      requestAnimationFrame(step);
+    } else {
+      finishAnimation(false);
+    }
+  };
+
+  const finishAnimation = (stoppedEarly) => {
+    btnRun.disabled = false;
+    btnStop.hidden = true;
     state.animating = false;
-  } else {
-    let lastLot = null;
-    for (let j = 0; j < amount; j++) {
-      const res = simulateSingleLotValues();
-      recordLot(res.defects);
-      lastLot = res;
+    state.stopRequested = false;
+    lotTitle.innerHTML = 'Último lote inspeccionado (\\(X = \\sum Y_i\\))';
+    renderMathIn(lotTitle);
+    if (stoppedEarly) {
+      badge.className = 'lot-badge';
+      badge.textContent = `Detenido en ${lotIdx} / ${amount} lotes`;
+    } else {
+      progressBar.style.width = '100%';
+      progressText.textContent = `${amount} / ${amount} lotes`;
     }
-    updateLotStageUI(lastLot.pieces, lastLot.defects);
-    updateSimStats();
-    renderSimChart();
-  }
+  };
+
+  requestAnimationFrame(step);
 }
 
 function resetSimulation() {
+  state.stopRequested = true;
   state.simLots = 0;
   state.simCounts = {};
   state.simTotalDefects = 0;
+  state.recentLots = [];
+  document.getElementById('sim-progress-wrap').hidden = true;
+  document.getElementById('stage-lot-title').innerHTML = 'Lote en inspección (\\(X = \\sum Y_i\\))';
+  renderMathIn(document.getElementById('stage-lot-title'));
   renderPiecesGrid(null);
+  renderLotHistory();
   const badge = document.getElementById('lot-status-badge');
   badge.className = 'lot-badge';
   badge.textContent = 'Esperando inspección...';
@@ -304,6 +439,9 @@ function setupSimulatorControls() {
   });
 
   document.getElementById('btn-sim-run').addEventListener('click', runSimulation);
+  document.getElementById('btn-sim-stop').addEventListener('click', () => {
+    state.stopRequested = true;
+  });
   document.getElementById('btn-sim-reset').addEventListener('click', resetSimulation);
 
   document.getElementById('btn-sim-default').addEventListener('click', () => {

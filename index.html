@@ -41,7 +41,14 @@
             <option value="100" selected>Inspeccionar 100 lotes</option>
             <option value="1000">Inspeccionar 1000 lotes</option>
           </select>
+          <label for="sim-speed" class="sr-only">Velocidad de animación</label>
+          <select id="sim-speed" title="Velocidad de la animación">
+            <option value="slow">Velocidad: Lenta</option>
+            <option value="normal" selected>Velocidad: Normal</option>
+            <option value="fast">Velocidad: Rápida</option>
+          </select>
           <button class="btn btn-main" id="btn-sim-run">▶ Inspeccionar Lotes</button>
+          <button class="btn btn-danger" id="btn-sim-stop" hidden>⏹ Detener</button>
         </div>
         <div class="panel-group">
           <button class="btn btn-secondary" id="btn-sim-default" title="Restaurar parámetros originales del problema">Restaurar \(n=20, p=0.05\)</button>
@@ -86,8 +93,15 @@
       <!-- Escenario visual del último lote inspeccionado -->
       <div class="stage">
         <div class="stage-header">
-          <span class="stage-label">Último lote inspeccionado (\(X = \sum Y_i\))</span>
+          <span class="stage-label" id="stage-lot-title">Lote en inspección (\(X = \sum Y_i\))</span>
           <span class="lot-badge" id="lot-status-badge">Esperando inspección...</span>
+        </div>
+
+        <div class="sim-progress-wrap" id="sim-progress-wrap" hidden>
+          <div class="sim-progress-track">
+            <div class="sim-progress-bar" id="sim-progress-bar"></div>
+          </div>
+          <span class="sim-progress-text" id="sim-progress-text">0 / 0 lotes</span>
         </div>
 
         <div class="pieces-grid" id="pieces-grid" aria-live="polite">
@@ -96,6 +110,11 @@
 
         <div class="lot-summary" id="lot-summary">
           Pulsa <strong>Inspeccionar Lotes</strong> para generar piezas con \(Y_i \sim \text{Bernoulli}(p)\).
+        </div>
+
+        <div class="lot-history-wrap" id="lot-history-wrap" hidden>
+          <div class="lot-history-label">Últimos lotes inspeccionados:</div>
+          <div class="lot-history" id="lot-history"></div>
         </div>
       </div>
 
