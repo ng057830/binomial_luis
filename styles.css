@@ -1,0 +1,1002 @@
+/* ============================================
+   DISTRIBUCIÓN BINOMIAL — CONTROL DE CALIDAD
+   Diseño claro, accesible y pedagógico
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root {
+  --bg:             #F5F4F0;
+  --surface:        #FFFFFF;
+  --surface-alt:    #F8F7F4;
+
+  --text:           #1C1B18;
+  --text-muted:     #6B6A66;
+  --text-hint:      #9E9D9A;
+
+  --primary:        #185FA5;
+  --primary-light:  #E6F1FB;
+  --primary-mid:    #378ADD;
+
+  --success:        #3B6D11;
+  --success-light:  #EAF3DE;
+  --success-mid:    #639922;
+
+  --danger:         #B91C1C;
+  --danger-light:   #FEE2E2;
+
+  --warning:        #854F0B;
+  --warning-light:  #FAEEDA;
+  --warning-mid:    #D97706;
+
+  --purple:         #6D28D9;
+  --purple-light:   #EFE7FF;
+  --purple-mid:     #8B5CF6;
+
+  --border:         rgba(28, 27, 24, 0.12);
+  --border-strong:  rgba(28, 27, 24, 0.22);
+
+  --radius-sm:      8px;
+  --radius-md:      12px;
+  --radius-lg:      16px;
+
+  --font: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1.03rem;
+  line-height: 1.65;
+  padding: 2rem 1.25rem 4rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+/* ============================================
+   CABECERA Y PESTAÑAS
+   ============================================ */
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.badge-top {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.25rem 0.85rem;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+h1 {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  max-width: 680px;
+  margin: 0 auto 1.5rem;
+  font-size: 1rem;
+}
+
+.toggle-wrapper {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  padding: 5px;
+  border-radius: 999px;
+  gap: 4px;
+}
+
+.toggle-btn {
+  border: none;
+  background: transparent;
+  padding: 0.55rem 1.25rem;
+  border-radius: 999px;
+  font-family: var(--font);
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.toggle-btn.active {
+  background: var(--primary);
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.toggle-btn:not(.active):hover {
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+/* Vistas */
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   BOTONES Y PANEL DE ACCIÓN
+   ============================================ */
+
+.action-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.panel-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+select, input[type="number"] {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-alt);
+  color: var(--text);
+}
+
+.btn {
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.55rem 1.15rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, background 0.2s, box-shadow 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn-main {
+  background: var(--primary);
+  color: #FFFFFF;
+}
+
+.btn-main:hover {
+  background: #134b83;
+}
+
+.btn-secondary {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: rgba(24, 95, 165, 0.25);
+}
+
+.btn-secondary:hover {
+  background: #d5e7f8;
+}
+
+.btn-clear {
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  border-color: var(--border-strong);
+}
+
+.btn-clear:hover {
+  background: #eceae3;
+  color: var(--text);
+}
+
+/* ============================================
+   PARÁMETROS INTERACTIVOS
+   ============================================ */
+
+.params-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.1rem 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.param-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.45rem;
+  font-size: 0.93rem;
+}
+
+.param-val {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.cond-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.cond-controls select {
+  flex: 1;
+}
+
+.cond-controls input[type="number"] {
+  width: 72px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* ============================================
+   ESCENARIO DE INSPECCIÓN DE PIEZAS
+   ============================================ */
+
+.stage {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.stage-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.stage-label {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.lot-badge {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.lot-badge.ok {
+  background: var(--success-light);
+  color: var(--success);
+  border-color: rgba(59, 109, 17, 0.25);
+}
+
+.lot-badge.fail {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: rgba(185, 28, 28, 0.25);
+}
+
+.pieces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.piece-chip {
+  height: 46px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: transform 0.15s, background 0.2s, border-color 0.2s;
+}
+
+.piece-chip.good {
+  background: var(--success-light);
+  border-color: rgba(59, 109, 17, 0.35);
+  color: var(--success);
+}
+
+.piece-chip.defect {
+  background: var(--danger-light);
+  border-color: rgba(185, 28, 28, 0.45);
+  color: var(--danger);
+  transform: scale(1.04);
+}
+
+.piece-chip .yi {
+  font-size: 0.88rem;
+  line-height: 1.1;
+}
+
+.piece-chip .idx {
+  font-size: 0.65rem;
+  opacity: 0.75;
+}
+
+.lot-summary {
+  text-align: center;
+  font-size: 0.94rem;
+  color: var(--text-muted);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ============================================
+   TARJETAS DE RESULTADOS
+   ============================================ */
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 1.2rem;
+}
+
+.card.c-blue   { border-top-color: var(--primary); }
+.card.c-green  { border-top-color: var(--success); }
+.card.c-purple { border-top-color: var(--purple); }
+
+.card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.big-number {
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 0.3rem;
+}
+
+.c-blue .big-number   { color: var(--primary); }
+.c-green .big-number  { color: var(--success); }
+.c-purple .big-number { color: var(--purple); }
+
+.card-desc {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+.mini-stats {
+  border-top: 1px solid var(--border);
+  padding-top: 0.65rem;
+  font-size: 0.86rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mini-stats > div {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+}
+
+.mini-stats strong {
+  color: var(--text);
+}
+
+/* ============================================
+   GRÁFICOS SVG
+   ============================================ */
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.chart-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.chart-header h3 {
+  font-size: 1.05rem;
+}
+
+.chart-sub {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+}
+
+.checkbox-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-strong);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.dot-theo { background: var(--primary); }
+.dot-sim  { background: var(--success-mid); }
+.dot-real { background: var(--purple-mid); }
+.dot-phat { background: var(--warning-mid); }
+
+.chart-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.chart-svg {
+  width: 100%;
+  min-width: 520px;
+  height: auto;
+  display: block;
+}
+
+.chart-tooltip {
+  position: fixed;
+  z-index: 999;
+  background: #1C1B18;
+  color: #FFFFFF;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+  line-height: 1.45;
+}
+
+/* ============================================
+   PESTAÑA 2: TEORÍA PASO A PASO
+   ============================================ */
+
+.theory-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.theory-callout {
+  background: var(--primary-light);
+  border-left: 4px solid var(--primary);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.96rem;
+}
+
+.theory-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.4rem;
+  display: flex;
+  gap: 1.1rem;
+  align-items: flex-start;
+}
+
+.step-num {
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #FFFFFF;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  margin-top: 0.15rem;
+}
+
+.step-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-body h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.65rem;
+  color: var(--text);
+}
+
+.step-body p {
+  margin-bottom: 0.65rem;
+}
+
+.math-box {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.math-box.highlight {
+  background: var(--primary-light);
+  border-color: rgba(24, 95, 165, 0.25);
+}
+
+.box-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+}
+
+.box-caption {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+  margin-bottom: 0 !important;
+}
+
+.clean-list {
+  margin: 0.5rem 0 0.75rem 1.4rem;
+}
+
+.clean-list li {
+  margin-bottom: 0.3rem;
+}
+
+.note-muted {
+  color: var(--text-muted);
+  font-size: 0.93rem;
+}
+
+.k-explorer {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  margin-top: 0.85rem;
+}
+
+.k-explorer-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.k-explorer-top input[type="range"] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.k-explorer-result {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+}
+
+.cases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
+  margin: 0.85rem 0 1rem;
+}
+
+.case-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.9rem;
+}
+
+.case-tag {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.4rem;
+}
+
+.case-math {
+  overflow-x: auto;
+  font-size: 0.92rem;
+}
+
+.case-res {
+  margin-top: 0.45rem;
+  font-weight: 700;
+  color: var(--success);
+  font-size: 0.96rem;
+}
+
+.case-res span {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.final-banner {
+  background: var(--success-light);
+  border: 1px solid rgba(59, 109, 17, 0.3);
+  border-radius: var(--radius-md);
+  padding: 1.15rem;
+  text-align: center;
+}
+
+.final-banner-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--success);
+}
+
+.final-banner-num {
+  font-size: 2.3rem;
+  font-weight: 700;
+  color: var(--success);
+  line-height: 1.2;
+  margin: 0.2rem 0;
+}
+
+.final-banner-sub {
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.two-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+/* ============================================
+   PESTAÑA 3: DATOS REALES (100 LOTES)
+   ============================================ */
+
+.data-intro-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.data-intro-card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+.data-intro-card p {
+  color: var(--text-muted);
+  max-width: 680px;
+}
+
+.comparison-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.comp-box {
+  flex: 1 1 260px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.comp-theo { border-top: 4px solid var(--primary); }
+.comp-obs  { border-top: 4px solid var(--purple); }
+
+.comp-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.comp-value {
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0.2rem 0;
+}
+
+.comp-theo .comp-value { color: var(--primary); }
+.comp-obs .comp-value  { color: var(--purple); }
+
+.comp-sub {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.comp-vs {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  padding: 0 0.25rem;
+}
+
+.data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.table-card, .phat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.table-card h3, .phat-card h3 {
+  font-size: 1.08rem;
+  margin-bottom: 0.85rem;
+}
+
+.freq-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.freq-table th, .freq-table td {
+  padding: 0.55rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.freq-table th {
+  background: var(--surface-alt);
+  font-weight: 700;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.freq-table .row-highlight {
+  background: rgba(24, 95, 165, 0.05);
+}
+
+.freq-table tfoot td {
+  background: var(--surface-alt);
+  border-top: 2px solid var(--border-strong);
+}
+
+.table-note {
+  margin-top: 0.65rem;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+/* ============================================
+   PESTAÑA 4: PRACTICA (QUIZ)
+   ============================================ */
+
+.quiz-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1.4rem;
+}
+
+.quiz-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.quiz-score-pill {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 700;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+}
+
+.quiz-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+  background: var(--surface-alt);
+}
+
+.quiz-q {
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.55rem;
+}
+
+.quiz-opt {
+  text-align: left;
+  font-family: var(--font);
+  font-size: 0.93rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.quiz-opt:hover:not(:disabled) {
+  background: var(--primary-light);
+  border-color: var(--primary);
+}
+
+.quiz-opt.correct {
+  background: var(--success-light);
+  border-color: var(--success);
+  color: var(--success);
+  font-weight: 700;
+}
+
+.quiz-opt.wrong {
+  background: var(--danger-light);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.quiz-feedback {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  display: none;
+}
+
+.quiz-feedback.show {
+  display: block;
+}
+
+.quiz-feedback.ok {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+.quiz-feedback.bad {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.quiz-actions {
+  text-align: right;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .theory-step {
+    flex-direction: column;
+  }
+  h1 {
+    font-size: 1.5rem;
+  }
+}

@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distribución Binomial — Control de Calidad en Lotes</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- KaTeX para renderizado matemático -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="initMath()"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge-top">Apuntes Interactivos para Luis · Probabilidad</div>
+      <h1>Distribución Binomial: Control de Calidad en Lotes</h1>
+      <p class="subtitle">
+        De la variable de Bernoulli \(Y_i\) al modelo \(X \sim B(n=20,\, p=0.05)\) y su contraste con 100 lotes reales.
+      </p>
+
+      <nav class="toggle-wrapper" role="tablist" aria-label="Secciones del aplicativo">
+        <button class="toggle-btn active" data-tab="sim" role="tab" aria-selected="true">Simulador de Lotes</button>
+        <button class="toggle-btn" data-tab="theory" role="tab" aria-selected="false">Teoría Paso a Paso</button>
+        <button class="toggle-btn" data-tab="data" role="tab" aria-selected="false">Datos Reales (100 Lotes)</button>
+        <button class="toggle-btn" data-tab="quiz" role="tab" aria-selected="false">Practica</button>
+      </nav>
+    </header>
+
+    <!-- ==========================================
+         PESTAÑA 1: SIMULADOR INTERACTIVO DE LOTES
+         ========================================== -->
+    <section id="view-sim" class="view active">
+      <div class="action-panel">
+        <div class="panel-group">
+          <label for="sim-amount" class="sr-only">Cantidad de lotes a simular</label>
+          <select id="sim-amount">
+            <option value="1">Inspeccionar 1 lote (paso a paso)</option>
+            <option value="10">Inspeccionar 10 lotes</option>
+            <option value="50">Inspeccionar 50 lotes</option>
+            <option value="100" selected>Inspeccionar 100 lotes</option>
+            <option value="1000">Inspeccionar 1000 lotes</option>
+          </select>
+          <button class="btn btn-main" id="btn-sim-run">▶ Inspeccionar Lotes</button>
+        </div>
+        <div class="panel-group">
+          <button class="btn btn-secondary" id="btn-sim-default" title="Restaurar parámetros originales del problema">Restaurar \(n=20, p=0.05\)</button>
+          <button class="btn btn-clear" id="btn-sim-reset">Limpiar</button>
+        </div>
+      </div>
+
+      <!-- Controles de parámetros -->
+      <div class="params-card">
+        <div class="param-item">
+          <div class="param-header">
+            <label for="input-n">Piezas por lote (<strong>\(n\)</strong>)</label>
+            <span class="param-val" id="val-n">20</span>
+          </div>
+          <input type="range" id="input-n" min="5" max="30" step="1" value="20">
+        </div>
+
+        <div class="param-item">
+          <div class="param-header">
+            <label for="input-p">Probabilidad de defecto (<strong>\(p\)</strong>)</label>
+            <span class="param-val" id="val-p">0.05 (5.0%)</span>
+          </div>
+          <input type="range" id="input-p" min="0.01" max="0.50" step="0.01" value="0.05">
+        </div>
+
+        <div class="param-item">
+          <div class="param-header">
+            <label for="input-k">Condición de interés</label>
+            <span class="param-val" id="val-cond-label">\(X \le 2\)</span>
+          </div>
+          <div class="cond-controls">
+            <select id="input-op">
+              <option value="le" selected>Como máximo (X ≤ k)</option>
+              <option value="eq">Exactamente (X = k)</option>
+              <option value="ge">Al menos (X ≥ k)</option>
+            </select>
+            <input type="number" id="input-k" min="0" max="20" value="2" aria-label="Valor de k">
+          </div>
+        </div>
+      </div>
+
+      <!-- Escenario visual del último lote inspeccionado -->
+      <div class="stage">
+        <div class="stage-header">
+          <span class="stage-label">Último lote inspeccionado (\(X = \sum Y_i\))</span>
+          <span class="lot-badge" id="lot-status-badge">Esperando inspección...</span>
+        </div>
+
+        <div class="pieces-grid" id="pieces-grid" aria-live="polite">
+          <!-- Se generan n piezas dinámicamente -->
+        </div>
+
+        <div class="lot-summary" id="lot-summary">
+          Pulsa <strong>Inspeccionar Lotes</strong> para generar piezas con \(Y_i \sim \text{Bernoulli}(p)\).
+        </div>
+      </div>
+
+      <!-- Tarjetas de resumen comparativo -->
+      <div class="results-grid">
+        <div class="card c-blue">
+          <h3>📐 Modelo Teórico</h3>
+          <div class="big-number" id="theo-prob">92.45 %</div>
+          <p class="card-desc" id="theo-formula-desc">\(P(X \le 2)\) con \(X \sim B(20,\, 0.05)\)</p>
+          <div class="mini-stats">
+            <div><span>Esperanza \(E[X] = np\):</span> <strong id="theo-mean">1.00</strong></div>
+            <div><span>Varianza \(\text{Var}(X) = np(1-p)\):</span> <strong id="theo-var">0.95</strong></div>
+          </div>
+        </div>
+
+        <div class="card c-green">
+          <h3>🧪 Tu Simulación</h3>
+          <div class="big-number" id="sim-prob">—</div>
+          <p class="card-desc" id="sim-count-desc">0 lotes cumplen la condición de 0 inspeccionados</p>
+          <div class="mini-stats">
+            <div><span>Media simulada \(\bar{X}\):</span> <strong id="sim-mean">—</strong></div>
+            <div><span>Tasa defectos \(\hat{p}_{\text{sim}}\):</span> <strong id="sim-phat">—</strong></div>
+          </div>
+        </div>
+
+        <div class="card c-purple">
+          <h3>🏭 Datos de la Fábrica</h3>
+          <div class="big-number">95.00 %</div>
+          <p class="card-desc">95 de los 100 lotes registrados cumplen \(X \le 2\)</p>
+          <div class="mini-stats">
+            <div><span>Total defectos / piezas:</span> <strong>88 / 2.000</strong></div>
+            <div><span>Tasa observada \(\hat{p}\):</span> <strong>0.044 (4.4%)</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico de barras comparativo -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3>Distribución de Probabilidad \(P(X=k)\) vs. Frecuencia Simulada</h3>
+            <p class="chart-sub">Pasa el ratón o toca cada barra para ver los valores exactos.</p>
+          </div>
+          <label class="checkbox-pill">
+            <input type="checkbox" id="toggle-real-overlay" checked>
+            <span>Mostrar los 100 lotes reales</span>
+          </label>
+        </div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="dot dot-theo"></span> Teórica \(B(n, p)\)</span>
+          <span class="legend-item"><span class="dot dot-sim"></span> Simulada (tu experimento)</span>
+          <span class="legend-item" id="legend-real"><span class="dot dot-real"></span> Observada (100 lotes CSV)</span>
+        </div>
+        <div class="chart-wrapper" id="sim-chart-wrapper"></div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PESTAÑA 2: TEORÍA PASO A PASO
+         ========================================== -->
+    <section id="view-theory" class="view">
+      <div class="theory-container">
+        <div class="theory-callout">
+          <strong>Orden ideal para estudiar:</strong> definir \(X\), explicar Bernoulli, justificar la binomial, establecer sus parámetros, deducir la función de probabilidad, calcular \(P(X \le 2)\) y finalmente contrastarla con los datos observados.
+        </div>
+
+        <!-- Paso 1 -->
+        <article class="theory-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h2>Definición de la variable aleatoria</h2>
+            <p>Sea:</p>
+            <div class="math-box">
+              \[ X : \text{número de piezas defectuosas en un lote de } 20 \text{ piezas.} \]
+            </div>
+            <p>Como cada lote contiene 20 piezas, la variable \(X\) puede tomar los valores:</p>
+            <div class="math-box highlight">
+              \[ X \in \{0, 1, 2, 3, \ldots, 20\} \]
+            </div>
+            <p>Observemos que cada pieza presenta únicamente dos resultados posibles:</p>
+            <ul class="clean-list">
+              <li><strong>Defectuosa:</strong> consideramos <em>éxito</em>, \(Y = 1\).</li>
+              <li><strong>No defectuosa:</strong> consideramos <em>fracaso</em>, \(Y = 0\).</li>
+            </ul>
+            <p class="note-muted">La palabra <em>éxito</em> es simplemente una denominación matemática para el resultado que queremos contar.</p>
+            <div class="math-box">
+              \[ Y_i = \begin{cases} 1 & \text{si la pieza } i \text{ es defectuosa} \\ 0 & \text{si la pieza } i \text{ no es defectuosa} \end{cases} \]
+            </div>
+            <p>Cada variable \(Y_i\) sigue una <strong>distribución de Bernoulli</strong>.</p>
+          </div>
+        </article>
+
+        <!-- Paso 2 -->
+        <article class="theory-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h2>Construcción de la distribución binomial</h2>
+            <p>El número total de piezas defectuosas en un lote se obtiene sumando las variables anteriores:</p>
+            <div class="math-box">
+              \[ X = Y_1 + Y_2 + Y_3 + \cdots + Y_{20} \]
+            </div>
+            <p>Para construir nuestro modelo, suponemos que se cumplen las 4 condiciones de la binomial:</p>
+            <ol class="clean-list">
+              <li>Tenemos \(n = 20\) piezas por lote (ensayos fijos).</li>
+              <li>Cada pieza puede ser defectuosa o no (dos resultados posibles).</li>
+              <li>La probabilidad de defecto \(p\) es la misma para todas las piezas.</li>
+              <li>Los resultados de las piezas son independientes entre sí.</li>
+            </ol>
+            <p>En la ficha técnica se establece una probabilidad de defecto del 5 % (\(p = 0.05\)), por lo que \(1 - p = 0.95\). En consecuencia:</p>
+            <div class="math-box highlight">
+              \[ X \sim B(n=20,\, p=0.05) \]
+            </div>
+            <p class="note-muted"><strong>Importante:</strong> el 5 % es un supuesto del modelo teórico. En la pestaña <em>Datos Reales</em> utilizaremos las 2.000 piezas registradas para estimar la tasa de defectos observada.</p>
+          </div>
+        </article>
+
+        <!-- Paso 3 -->
+        <article class="theory-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h2>Función de probabilidad binomial (Explorador interactivo)</h2>
+            <p>Para calcular la probabilidad de encontrar exactamente \(k\) piezas defectuosas, utilizamos:</p>
+            <div class="math-box highlight">
+              \[ P(X = k) = \binom{n}{k} p^k (1 - p)^{n-k} \]
+            </div>
+            <p>Donde \(\binom{n}{k} = \frac{n!}{k!(n-k)!}\) cuenta las distintas maneras en que pueden aparecer \(k\) piezas defectuosas entre las \(n=20\) piezas del lote.</p>
+
+            <!-- Explorador de k -->
+            <div class="k-explorer">
+              <div class="k-explorer-top">
+                <label for="explorer-k">Prueba un valor de <strong>\(k\)</strong> (de 0 a 20):</label>
+                <input type="range" id="explorer-k" min="0" max="20" value="2">
+                <span class="param-val" id="explorer-k-val">k = 2</span>
+              </div>
+              <div class="k-explorer-result" id="explorer-result">
+                <!-- Rellenado por JS -->
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Paso 4 -->
+        <article class="theory-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h2>Resolución del problema: \(P(X \le 2)\)</h2>
+            <p>La fábrica quiere saber la probabilidad de que un lote contenga <strong>como máximo dos piezas defectuosas</strong>:</p>
+            <div class="math-box">
+              \[ P(X \le 2) = P(X = 0) + P(X = 1) + P(X = 2) \]
+            </div>
+
+            <div class="cases-grid">
+              <div class="case-card">
+                <div class="case-tag">Caso A · Ninguna defectuosa</div>
+                <div class="case-math">
+                  \[ P(X=0) = \binom{20}{0}(0.05)^0(0.95)^{20} = (0.95)^{20} \]
+                </div>
+                <div class="case-res">\(P(X=0) \approx 0.3585\) <span>(35,85 %)</span></div>
+              </div>
+
+              <div class="case-card">
+                <div class="case-tag">Caso B · Exactamente una</div>
+                <div class="case-math">
+                  \[ P(X=1) = \binom{20}{1}(0.05)^1(0.95)^{19} = 20(0.05)(0.95)^{19} \]
+                </div>
+                <div class="case-res">\(P(X=1) \approx 0.3774\) <span>(37,74 %)</span></div>
+              </div>
+
+              <div class="case-card">
+                <div class="case-tag">Caso C · Exactamente dos</div>
+                <div class="case-math">
+                  \[ P(X=2) = \binom{20}{2}(0.05)^2(0.95)^{18} = 190(0.05)^2(0.95)^{18} \]
+                </div>
+                <div class="case-res">\(P(X=2) \approx 0.1887\) <span>(18,87 %)</span></div>
+              </div>
+            </div>
+
+            <div class="final-banner">
+              <div class="final-banner-label">Resultado del modelo binomial (sin redondear los sumandos)</div>
+              <div class="final-banner-num">92,45 %</div>
+              <div class="final-banner-sub">\(P(X \le 2) = \sum_{k=0}^{2} \binom{20}{k}(0.05)^k(0.95)^{20-k} \approx 0.9245\)</div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Paso 5 -->
+        <article class="theory-step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h2>Esperanza matemática y Varianza</h2>
+            <p>Las dos medidas fundamentales de una distribución binomial \(B(n, p)\) son:</p>
+            <div class="two-cols">
+              <div class="math-box highlight">
+                <div class="box-title">Esperanza matemática</div>
+                \[ E[X] = np = 20(0.05) = 1 \]
+                <p class="box-caption">En promedio, esperamos 1 pieza defectuosa por lote.</p>
+              </div>
+              <div class="math-box highlight">
+                <div class="box-title">Varianza</div>
+                \[ \operatorname{Var}(X) = np(1-p) = 20(0.05)(0.95) = 0.95 \]
+                <p class="box-caption">Desviación típica: \(\sigma = \sqrt{0.95} \approx 0.9747\).</p>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PESTAÑA 3: DATOS REALES (100 LOTES)
+         ========================================== -->
+    <section id="view-data" class="view">
+      <div class="data-intro-card">
+        <div>
+          <h2>¿Para qué tenemos los 100 registros de la tabla?</h2>
+          <p>
+            Para <strong>contrastar nuestra predicción matemática</strong> con los datos observados en la fábrica.
+            Cada registro representa un lote de 20 piezas (\(100 \times 20 = 2.000\) piezas inspeccionadas).
+          </p>
+        </div>
+        <button class="btn btn-main" id="btn-download-csv">⬇ Descargar CSV (100 lotes)</button>
+      </div>
+
+      <div class="comparison-hero">
+        <div class="comp-box comp-theo">
+          <div class="comp-label">Probabilidad teórica</div>
+          <div class="comp-value">92,45 %</div>
+          <div class="comp-sub">Modelo binomial con \(p = 0.05\)</div>
+        </div>
+        <div class="comp-vs">vs</div>
+        <div class="comp-box comp-obs">
+          <div class="comp-label">Frecuencia observada</div>
+          <div class="comp-value">95,00 %</div>
+          <div class="comp-sub">\(40 + 38 + 17 = 95\) de 100 lotes</div>
+        </div>
+      </div>
+
+      <div class="data-grid">
+        <div class="table-card">
+          <h3>Tabla de frecuencias de los 100 lotes</h3>
+          <table class="freq-table">
+            <thead>
+              <tr>
+                <th>Defectuosas \(X\)</th>
+                <th>Lotes observados</th>
+                <th>Frec. relativa</th>
+                <th>Esperado \(B(20, 0.05)\)</th>
+                <th>Total defectos</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-highlight">
+                <td><strong>0</strong></td>
+                <td>40</td>
+                <td>40 %</td>
+                <td>35.85</td>
+                <td>\(0 \times 40 = 0\)</td>
+              </tr>
+              <tr class="row-highlight">
+                <td><strong>1</strong></td>
+                <td>38</td>
+                <td>38 %</td>
+                <td>37.74</td>
+                <td>\(1 \times 38 = 38\)</td>
+              </tr>
+              <tr class="row-highlight">
+                <td><strong>2</strong></td>
+                <td>17</td>
+                <td>17 %</td>
+                <td>18.87</td>
+                <td>\(2 \times 17 = 34\)</td>
+              </tr>
+              <tr>
+                <td><strong>3</strong></td>
+                <td>4</td>
+                <td>4 %</td>
+                <td>5.96</td>
+                <td>\(3 \times 4 = 12\)</td>
+              </tr>
+              <tr>
+                <td><strong>4</strong></td>
+                <td>1</td>
+                <td>1 %</td>
+                <td>1.33</td>
+                <td>\(4 \times 1 = 4\)</td>
+              </tr>
+              <tr>
+                <td><strong>5 o más</strong></td>
+                <td>0</td>
+                <td>0 %</td>
+                <td>0.26</td>
+                <td>0</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Total</strong></td>
+                <td><strong>100</strong></td>
+                <td><strong>100 %</strong></td>
+                <td><strong>100.00</strong></td>
+                <td><strong>88 defectos</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+          <p class="table-note">Las filas sombreadas corresponden al evento \(X \le 2\) (\(40 + 38 + 17 = 95\) lotes).</p>
+        </div>
+
+        <div class="phat-card">
+          <h3>Estimación empírica \(\hat{p}\)</h3>
+          <p>A partir de las 2.000 piezas registradas, podemos estimar la tasa real de defectos por pieza:</p>
+          <div class="math-box highlight">
+            \[ \hat{p} = \frac{\text{Total de defectos}}{\text{Total de piezas}} = \frac{88}{2000} = 0.044 = 4.4\% \]
+          </div>
+          <p>
+            <strong>¿Por qué no coinciden exactamente el 92,45 % y el 95 %?</strong>
+          </p>
+          <p class="note-muted">
+            Una distribución de probabilidad describe cómo se comporta un fenómeno aleatorio a largo plazo, pero no exige que una muestra finita de 100 lotes reproduzca exactamente los porcentajes teóricos. Además, la tasa observada (\(\hat{p}=4.4\%\)) es ligeramente menor que el 5 % teórico de la ficha.
+          </p>
+          <div class="math-box">
+            \[ \text{Con } \hat{p}=0.044:\quad P(X \le 2) \approx 94.68\% \]
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <h3>Comparativa Visual: Teórico (\(p=0.05\)) vs. Observado vs. Empírico (\(\hat{p}=0.044\))</h3>
+            <p class="chart-sub">Observa cómo el modelo con \(\hat{p}=0.044\) se acerca aún más a los datos registrados.</p>
+          </div>
+          <label class="checkbox-pill">
+            <input type="checkbox" id="toggle-phat-overlay" checked>
+            <span>Mostrar curva con \(\hat{p} = 0.044\)</span>
+          </label>
+        </div>
+        <div class="chart-legend">
+          <span class="legend-item"><span class="dot dot-theo"></span> Teórica \(p=0.05\)</span>
+          <span class="legend-item"><span class="dot dot-real"></span> Observada (100 lotes)</span>
+          <span class="legend-item" id="legend-phat"><span class="dot dot-phat"></span> Modelo \(\hat{p}=0.044\)</span>
+        </div>
+        <div class="chart-wrapper" id="data-chart-wrapper"></div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         PESTAÑA 4: PRACTICA (MINI-QUIZ)
+         ========================================== -->
+    <section id="view-quiz" class="view">
+      <div class="quiz-container">
+        <div class="quiz-header">
+          <div>
+            <h2>Comprueba lo que has aprendido</h2>
+            <p>Responde estas 5 preguntas sobre el problema de la fábrica para afianzar los conceptos.</p>
+          </div>
+          <div class="quiz-score-pill" id="quiz-score">Puntuación: 0 / 5</div>
+        </div>
+        <div id="quiz-list"></div>
+        <div class="quiz-actions">
+          <button class="btn btn-secondary" id="btn-quiz-reset">Reiniciar cuestionario</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Tooltip flotante para gráficos -->
+  <div id="chart-tooltip" class="chart-tooltip" hidden></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
